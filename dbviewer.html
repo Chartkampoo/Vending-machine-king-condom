@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>King Condom — Database Viewer & Admin</title>
+  <style>
+:root {
+      --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+      --border: #e2e8f0; --accent: #475d73; --accent2: #2563eb;
+      --ok: #16a34a; --warn: #d97706; --bad: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+    h1 { font-size: 20px; }
+    h1 small { color: var(--muted); font-weight: 400; font-size: 13px; display: block; }
+    a.back { color: var(--accent); text-decoration: none; font-size: 13px; }
+    #error { display: none; background: #fee2e2; color: var(--bad); padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; }
+
+    .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tab { background: var(--card); border: 1px solid var(--border); border-radius: 10px 10px 0 0; padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: none; }
+    .tab.active { color: var(--accent2); border-color: var(--accent2); box-shadow: inset 0 -2px 0 var(--accent2); }
+    .tab .badge { background: var(--accent2); color: #fff; border-radius: 999px; padding: 1px 7px; font-size: 10px; margin-left: 5px; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; min-width: 140px; }
+    .stat .num { font-size: 22px; font-weight: 800; }
+    .stat .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; overflow-x: auto; }
+    .card h2 { font-size: 14px; margin-bottom: 10px; color: var(--accent); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .muted { color: var(--muted); font-weight: 400; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 2px solid var(--border); padding: 8px 10px; white-space: nowrap; }
+    td { border-bottom: 1px solid var(--border); padding: 8px 10px; white-space: nowrap; }
+    tr:hover td { background: #f8fafc; }
+    .events td, .events th { font-family: Consolas, monospace; font-size: 12px; }
+    tr[data-txn] { cursor: pointer; }
+    tr.active td { background: #eef2ff; }
+
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .paid      { background: #dcfce7; color: var(--ok); }
+    .pending   { background: #fef3c7; color: var(--warn); }
+    .cancelled, .failed { background: #fee2e2; color: var(--bad); }
+    .refunded  { background: #e0e7ff; color: #4338ca; }
+    .cash  { background: #f1f5f9; color: #334155; }
+    .promptpay_qr { background: #ede9fe; color: #6d28d9; }
+    .credit_card  { background: #e0f2fe; color: #0369a1; }
+    .inactive { background: #f1f5f9; color: var(--muted); }
+
+    button { font-family: inherit; cursor: pointer; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; padding: 8px 14px; }
+    .btn-primary { background: var(--accent2); color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+    .btn-edit { background: #e0e7ff; color: #3730a3; }
+    .btn-del  { background: #fee2e2; color: var(--bad); }
+    .btn-ghost { background: #f1f5f9; color: var(--text); }
+    .row-actions { display: flex; gap: 6px; }
+    .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 40; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: var(--card); border-radius: 14px; width: 100%; max-width: 620px; padding: 20px 22px; }
+    .modal h3 { font-size: 16px; margin-bottom: 14px; }
+    .modal.danger { border-top: 4px solid var(--bad); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+    .btn-danger { background: var(--bad); color: #fff; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+    .grid .full { grid-column: 1 / -1; }
+    label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 3px; }
+    input, select, textarea { width: 100%; font-family: inherit; font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text); }
+    input:focus, select:focus, textarea:focus { outline: 2px solid #bfdbfe; border-color: var(--accent2); }
+    textarea { resize: vertical; min-height: 54px; }
+    .chk { display: flex; align-items: center; gap: 8px; }
+    .chk input { width: auto; }
+    .chk span { font-size: 13px; color: var(--text); text-transform: none; letter-spacing: 0; }
+    .form-error { display: none; color: var(--bad); background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-top: 12px; }
+
+    #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: #0f172a; color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 13px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 60; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.err { background: var(--bad); }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🗄️ Database Viewer <small>vending_machine @ 127.0.0.1:3306 — read + admin CRUD</small></h1>
+    <a class="back" href="/">← Back to kiosk</a>
+  </header>
+
+  <div id="error"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="products">Products <span class="badge" id="n-prod">–</span></button>
+    <button class="tab" data-tab="customers">Customers <span class="badge" id="n-cust">–</span></button>
+    <button class="tab" data-tab="transactions">Transactions</button>
+  </div>
+
+  <section class="panel active" id="panel-overview">
+    <div class="stats" id="stats"></div>
+    <div class="card">
+      <h2>Recent Transactions <span class="muted">(click a row to see its payment events)</span></h2>
+      <table id="txn-table">
+        <thead>
+          <tr><th>Txn Code</th><th>Slot</th><th>Product</th><th>Customer</th><th>Method</th>
+              <th>Status</th><th>Total (฿)</th><th>Disp.</th><th>Coll.</th><th>Events</th><th>When</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="card" id="events-card" style="display:none">
+      <h2 id="events-title">Payment Events</h2>
+      <table class="events">
+        <thead><tr><th>#</th><th>Event</th><th>Amount (฿)</th><th>Reference</th><th>Timestamp</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-products">
+    <div class="card">
+      <h2>Products <span class="toolbar"><button class="btn-primary" id="btn-new-product">+ New product</button></span></h2>
+      <table id="prod-table">
+        <thead><tr><th>Slot</th><th>Name (EN)</th><th>Brand</th><th>Category</th><th>Size</th>
+          <th>Price (฿)</th><th>Stock</th><th>State</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-customers">
+    <div class="card">
+      <h2>Customers <span class="toolbar"><button class="btn-primary" id="btn-new-customer">+ New customer</button></span></h2>
+      <table id="cust-table">
+        <thead><tr><th>#</th><th>Member</th><th>Name</th><th>Phone</th><th>Email</th><th>Gender</th>
+          <th>Opt-in</th><th>Paid txns</th><th>Lifetime (฿)</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-transactions">
+    <div class="card">
+      <h2>All Transactions <span class="muted">(edit status/flags or delete; sales are created from the kiosk)</span></h2>
+      <table id="txn-admin-table">
+        <thead><tr><th>#</th><th>Txn Code</th><th>Slot</th><th>Product</th><th>Customer</th><th>Method</th>
+          <th>Status</th><th>Total (฿)</th><th>Disp.</th><th>Coll.</th><th>When</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="modal-backdrop" id="product-modal">
+    <div class="modal">
+      <h3 id="product-modal-title">New product</h3>
+      <form id="product-form">
+        <div class="grid">
+          <div><label>Slot code (A1–D4)</label><input name="slot_code" maxlength="2" required placeholder="A1"></div>
+          <div><label>Brand</label><input name="brand" maxlength="60" required></div>
+          <div><label>Name (TH)</label><input name="name_th" maxlength="120" required></div>
+          <div><label>Name (EN)</label><input name="name_en" maxlength="120" required></div>
+          <div>
+            <label>Category</label>
+            <select name="category">
+              <option value="condom_49">condom_49</option><option value="condom_52">condom_52</option>
+              <option value="condom_54">condom_54</option><option value="condom_56">condom_56</option>
+              <option value="lubricant">lubricant</option>
+            </select>
+          </div>
+          <div><label>Size label</label><input name="size_label" maxlength="20" required placeholder="52 mm"></div>
+          <div class="full"><label>Product type</label><input name="product_type" maxlength="80" required></div>
+          <div class="full"><label>Description (TH)</label><textarea name="description_th"></textarea></div>
+          <div class="full"><label>Description (EN)</label><textarea name="description_en"></textarea></div>
+          <div><label>Badge (TH)</label><input name="badge_th" maxlength="40"></div>
+          <div><label>Badge (EN)</label><input name="badge_en" maxlength="40"></div>
+          <div><label>Image URL</label><input name="image_url" maxlength="500"></div>
+          <div><label>Price (฿)</label><input name="price_thb" type="number" step="0.01" min="0" required></div>
+          <div><label>Stock qty</label><input name="stock_qty" type="number" min="0" required></div>
+          <div><label>Max stock qty</label><input name="max_stock_qty" type="number" min="0" required></div>
+          <div><label>Card color</label><input name="color" type="color" value="#475d73"></div>
+          <div><label>Box color</label><input name="box_color" type="color" value="#2b3a4a"></div>
+          <div><label>Accent color</label><input name="accent_color" type="color" value="#475d73"></div>
+          <div class="full chk"><input type="checkbox" name="is_active" id="p-active" checked><span>Active (visible in kiosk)</span></div>
+        </div>
+        <div class="form-error" id="product-form-error"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" data-close>Cancel</button>
+          <button type="submit" class="btn-primary" id="product-save">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="customer-modal">
+    <div class="modal">
+      <h3 id="customer-modal-title">New customer</h3>
+      <form id="customer-form">
+        <div class="grid">
+          <div><label>Full name</label><input name="full_name" maxlength="120"></div>
+          <div><label>Member code</label><input name="member_code" maxlength="20" placeholder="MBR-0005"></div>
+          <div><label>Phone</label><input name="phone" maxlength="20" placeholder="+66812345678"></div>
+          <div><label>Email</label><input name="email" maxlength="255" type="email"></div>
+          <div><label>Birth date</label><input name="birth_date" type="date"></div>
+          <div>
+            <label>Gender</label>
+            <select name="gender">
+              <option value="">—</option><option value="male">male</option><option value="female">female</option>
+              <option value="other">other</option><option value="prefer_not_to_say">prefer not to say</option>
+            </select>
+          </div>
+          <div class="full chk"><input type="checkbox" name="marketing_opt_in" id="c-optin"><span>Marketing opt-in</span></div>
+        </div>
+        <div class="form-error" id="customer-form-error"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" data-close>Cancel</button>
+          <button type="submit" class="btn-primary" id="customer-save">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="txn-modal">
+    <div class="modal">
+      <h3 id="txn-modal-title">Edit transaction</h3>
+      <form id="txn-form">
+        <div class="grid">
+          <div class="full"><label id="txn-modal-sub" class="muted" style="text-transform:none;letter-spacing:0"></label></div>
+          <div>
+            <label>Payment status</label>
+            <select name="payment_status">
+              <option>pending</option><option>paid</option><option>failed</option><option>refunded</option><option>cancelled</option>
+            </select>
+          </div>
+          <div class="chk" style="align-self:end"><input type="checkbox" name="dispensed" id="t-disp"><span>Dispensed</span></div>
+          <div class="chk"><input type="checkbox" name="collected" id="t-coll"><span>Collected</span></div>
+        </div>
+        <div class="form-error" id="txn-form-error"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" data-close>Cancel</button>
+          <button type="submit" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="confirm-modal">
+    <div class="modal danger" style="max-width:440px">
+      <h3 id="confirm-title">Delete?</h3>
+      <p id="confirm-text" style="font-size:13px;color:var(--muted)"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" data-close>Cancel</button>
+        <button type="button" class="btn-danger" id="confirm-ok">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const fmtTime = iso => iso ? String(iso).replace('T', ' ').slice(0, 19) : '—';
+const baht = v => (v === null || v === undefined) ? '—' : Number(v).toFixed(2);
+const esc = v => v === null || v === undefined ? '' : String(v).replace(/[&<>"']/g,
+  c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+function showError(msg) { const el = $('#error'); el.style.display = 'block'; el.textContent = '⚠️ ' + msg; }
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 2600);
+}
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, {
+    method: opts.method || 'GET',
+    headers: opts.body ? { 'Content-Type': 'application/json' } : undefined,
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  let b = {};
+  try { b = await r.json(); } catch {  }
+  if (!r.ok || b.ok === false) throw new Error(b.error || `HTTP ${r.status}`);
+  return b;
+}
+
+$$('.tab').forEach(t => t.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.toggle('active', x === t));
+  $$('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + t.dataset.tab));
+}));
+
+function openModal(id) { $(id).classList.add('open'); }
+function closeModal(el) { el.classList.remove('open'); }
+$$('.modal-backdrop').forEach(b => {
+  b.addEventListener('click', e => { if (e.target === b || e.target.closest('[data-close]')) closeModal(b); });
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $$('.modal-backdrop.open').forEach(closeModal); });
+
+function formError(formSel, errSel, msg) {
+  const el = $(errSel);
+  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg ? '⚠️ ' + msg : '';
+}
+
+let confirmAction = null;
+function askConfirm(title, text, action) {
+  $('#confirm-title').textContent = title;
+  $('#confirm-text').textContent = text;
+  confirmAction = action;
+  openModal('#confirm-modal');
+}
+$('#confirm-ok').addEventListener('click', async () => {
+  closeModal($('#confirm-modal'));
+  if (confirmAction) { try { await confirmAction(); } catch (err) { toast(err.message, true); } confirmAction = null; }
+});
+
+async function loadSummary() {
+  const b = await api('/api/db/summary');
+  const rev = b.revenue, st = b.stock;
+  const items = [
+    ['Paid revenue (฿)', Number(rev.revenue).toLocaleString()],
+    ['Paid transactions', rev.paid_txns],
+    ['Units left in machine', st.units_left],
+    ['Empty slots', st.empty_slots]
+  ];
+  for (const c of b.counts) items.push([`rows: ${c.tbl}`, c.n]);
+  $('#stats').innerHTML = items.map(([l, v]) =>
+    `<div class="stat"><div class="num">${v}</div><div class="lbl">${esc(l)}</div></div>`).join('');
+}
+
+function txnRowHtml(t, admin) {
+  const cust = t.customer ? esc(t.customer) : '<span class="muted">anonymous</span>';
+  const base = `
+    <td><strong>${esc(t.txn_code)}</strong></td>
+    <td>${esc(t.slot_code)}</td>
+    <td>${esc(t.product)}</td>
+    <td>${cust}</td>
+    <td><span class="pill ${t.payment_method}">${esc(t.payment_method)}</span></td>
+    <td><span class="pill ${t.payment_status}">${esc(t.payment_status)}</span></td>
+    <td style="text-align:right">${baht(t.total_amount_thb)}</td>`;
+  return admin ? `
+    <tr data-id="${t.id}" data-txn="${esc(t.txn_code)}">
+      <td class="muted">${t.id}</td>${base}
+      <td style="text-align:center">${t.dispensed ? '✅' : '—'}</td>
+      <td style="text-align:center">${t.collected ? '✅' : '—'}</td>
+      <td class="muted">${fmtTime(t.created_at)}</td>
+      <td><div class="row-actions">
+        <button class="btn-sm btn-edit" data-act="edit-txn">Edit</button>
+        <button class="btn-sm btn-del" data-act="del-txn">Delete</button>
+      </div></td>
+    </tr>` : `
+    <tr data-txn="${esc(t.txn_code)}">
+      ${base}
+      <td style="text-align:center">${t.dispensed ? '✅' : '—'}</td>
+      <td style="text-align:center">${t.collected ? '✅' : '—'}</td>
+      <td style="text-align:center">${t.event_count}</td>
+      <td class="muted">${fmtTime(t.created_at)}</td>
+    </tr>`;
+}
+
+async function loadTransactions() {
+  const b = await api('/api/db/transactions?limit=25');
+  $('#txn-table tbody').innerHTML = b.transactions.map(t => txnRowHtml(t, false)).join('');
+  const b2 = await api('/api/db/transactions?limit=100');
+  $('#txn-admin-table tbody').innerHTML = b2.transactions.map(t => txnRowHtml(t, true)).join('') ||
+    '<tr><td colspan="12" class="muted">No transactions yet.</td></tr>';
+}
+
+async function loadEvents(txn) {
+  document.querySelectorAll('#txn-table tr').forEach(tr => tr.classList.toggle('active', tr.dataset.txn === txn));
+  const b = await api('/api/db/payment-events?txn=' + encodeURIComponent(txn));
+  $('#events-card').style.display = 'block';
+  $('#events-title').textContent = `Payment Events — ${txn} (${b.events.length} event${b.events.length === 1 ? '' : 's'})`;
+  $('#events-card tbody').innerHTML = b.events.map((e, i) => `
+    <tr>
+      <td class="muted">${i + 1}</td>
+      <td>${esc(e.event_type)}</td>
+      <td style="text-align:right">${baht(e.amount_thb)}</td>
+      <td>${e.reference ? esc(e.reference) : '<span class="muted">—</span>'}</td>
+      <td class="muted">${fmtTime(e.created_at)}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="muted">No payment events recorded.</td></tr>';
+  $('#events-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+$('#txn-table').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-txn]');
+  if (tr) loadEvents(tr.dataset.txn).catch(err => toast(err.message, true));
+});
+
+const PRODUCT_FIELDS = ['slot_code','brand','name_th','name_en','category','size_label','product_type',
+  'description_th','description_en','badge_th','badge_en','image_url','color','box_color','accent_color'];
+let editingProductId = null;
+
+function fillForm(form, data) {
+  for (const [k, v] of Object.entries(data)) {
+    const el = form.elements[k];
+    if (!el) continue;
+    if (el.type === 'checkbox') el.checked = !!v;
+    else el.value = v ?? '';
+  }
+}
+
+async function loadProducts() {
+  const b = await api('/api/db/products');
+  $('#n-prod').textContent = b.products.length;
+  $('#prod-table tbody').innerHTML = b.products.map(p => `
+    <tr>
+      <td><strong>${esc(p.slot_code)}</strong></td>
+      <td>${esc(p.name_en)}</td>
+      <td>${esc(p.brand)}</td>
+      <td class="muted">${esc(p.category)}</td>
+      <td>${esc(p.size_label)}</td>
+      <td style="text-align:right">${baht(p.price_thb)}</td>
+      <td>${p.stock_qty} / ${p.max_stock_qty}</td>
+      <td><span class="pill ${p.is_active ? 'paid' : 'inactive'}">${p.is_active ? 'active' : 'inactive'}</span></td>
+      <td><div class="row-actions">
+        <button class="btn-sm btn-edit" data-act="edit-product" data-id="${p.id}">Edit</button>
+        <button class="btn-sm btn-del" data-act="del-product" data-id="${p.id}" data-slot="${esc(p.slot_code)}">Delete</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+$('#btn-new-product').addEventListener('click', () => {
+  editingProductId = null;
+  $('#product-modal-title').textContent = 'New product';
+  $('#product-form').reset();
+  $('#p-active').checked = true;
+  formError('', '#product-form-error', '');
+  openModal('#product-modal');
+});
+
+$('#prod-table').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  if (btn.dataset.act === 'edit-product') {
+    api('/api/db/products').then(b => {
+      const p = b.products.find(x => x.id === id);
+      if (!p) throw new Error('product not found');
+      editingProductId = id;
+      $('#product-modal-title').textContent = `Edit product ${p.slot_code}`;
+      fillForm($('#product-form'), p);
+      $('#p-active').checked = !!p.is_active;
+      formError('', '#product-form-error', '');
+      openModal('#product-modal');
+    }).catch(err => toast(err.message, true));
+  } else if (btn.dataset.act === 'del-product') {
+    askConfirm('Deactivate product?',
+      `Slot ${btn.dataset.slot} will be hidden from the kiosk (soft delete). It stays in the database for reporting.`,
+      async () => {
+        await api('/api/db/products/' + id, { method: 'DELETE' });
+        toast('Product deactivated');
+        refreshAll();
+      });
+  }
+});
+
+$('#product-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  const body = {};
+  for (const k of PRODUCT_FIELDS) body[k] = f.elements[k].value.trim();
+  body.price_thb = f.elements.price_thb.value;
+  body.stock_qty = f.elements.stock_qty.value;
+  body.max_stock_qty = f.elements.max_stock_qty.value;
+  body.is_active = f.elements.is_active.checked;
+  try {
+    if (editingProductId) {
+      await api('/api/db/products/' + editingProductId, { method: 'PUT', body });
+      toast('Product updated');
+    } else {
+      await api('/api/db/products', { method: 'POST', body });
+      toast('Product created');
+    }
+    closeModal($('#product-modal'));
+    refreshAll();
+  } catch (err) {
+    formError('', '#product-form-error', err.message);
+  }
+});
+
+let editingCustomerId = null;
+const CUSTOMER_FIELDS = ['full_name','member_code','phone','email','birth_date','gender'];
+
+async function loadCustomers() {
+  const b = await api('/api/db/customers');
+  const rows = b.customers;
+  $('#n-cust').textContent = rows.length;
+  $('#cust-table tbody').innerHTML = rows.map(c => `
+    <tr>
+      <td class="muted">${c.id}</td>
+      <td>${c.member_code ? esc(c.member_code) : '<span class="muted">—</span>'}</td>
+      <td>${c.full_name ? esc(c.full_name) : '<span class="muted">anonymous</span>'}</td>
+      <td>${c.phone ? esc(c.phone) : '<span class="muted">—</span>'}</td>
+      <td>${c.email ? esc(c.email) : '<span class="muted">—</span>'}</td>
+      <td class="muted">${c.gender ? esc(c.gender) : '—'}</td>
+      <td style="text-align:center">${c.marketing_opt_in ? '✅' : '—'}</td>
+      <td style="text-align:center">${c.paid_txns}</td>
+      <td style="text-align:right">${baht(c.paid_total)}</td>
+      <td><div class="row-actions">
+        <button class="btn-sm btn-edit" data-act="edit-customer" data-id="${c.id}">Edit</button>
+        <button class="btn-sm btn-del" data-act="del-customer" data-id="${c.id}" data-name="${esc(c.full_name || '#' + c.id)}">Delete</button>
+      </div></td>
+    </tr>`).join('') || '<tr><td colspan="10" class="muted">No customers yet.</td></tr>';
+}
+
+$('#btn-new-customer').addEventListener('click', () => {
+  editingCustomerId = null;
+  $('#customer-modal-title').textContent = 'New customer';
+  $('#customer-form').reset();
+  formError('', '#customer-form-error', '');
+  openModal('#customer-modal');
+});
+
+$('#cust-table').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  if (btn.dataset.act === 'edit-customer') {
+    api('/api/db/customers').then(b => {
+      const c = b.customers.find(x => x.id === id);
+      if (!c) throw new Error('customer not found');
+      editingCustomerId = id;
+      $('#customer-modal-title').textContent = `Edit customer #${id}`;
+      fillForm($('#customer-form'), c);
+      $('#c-optin').checked = !!c.marketing_opt_in;
+      formError('', '#customer-form-error', '');
+      openModal('#customer-modal');
+    }).catch(err => toast(err.message, true));
+  } else if (btn.dataset.act === 'del-customer') {
+    askConfirm('Delete customer?',
+      `${btn.dataset.name} will be permanently deleted. Their past transactions become anonymous (customer link is cleared).`,
+      async () => {
+        await api('/api/db/customers/' + id, { method: 'DELETE' });
+        toast('Customer deleted');
+        refreshAll();
+      });
+  }
+});
+
+$('#customer-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  const body = {};
+  for (const k of CUSTOMER_FIELDS) body[k] = f.elements[k].value.trim() || null;
+  body.marketing_opt_in = f.elements.marketing_opt_in.checked;
+  try {
+    if (editingCustomerId) {
+      await api('/api/db/customers/' + editingCustomerId, { method: 'PUT', body });
+      toast('Customer updated');
+    } else {
+      await api('/api/db/customers', { method: 'POST', body });
+      toast('Customer created');
+    }
+    closeModal($('#customer-modal'));
+    refreshAll();
+  } catch (err) {
+    formError('', '#customer-form-error', err.message);
+  }
+});
+
+let editingTxnId = null;
+
+$('#txn-admin-table').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const tr = btn.closest('tr');
+  const id = Number(tr.dataset.id);
+  if (btn.dataset.act === 'edit-txn') {
+    api('/api/db/transactions?limit=100').then(b => {
+      const t = b.transactions.find(x => x.id === id);
+      if (!t) throw new Error('transaction not found');
+      editingTxnId = id;
+      $('#txn-modal-title').textContent = `Edit transaction ${t.txn_code}`;
+      $('#txn-modal-sub').textContent = `${t.product} · slot ${t.slot_code} · ฿${baht(t.total_amount_thb)} · ${fmtTime(t.created_at)}`;
+      const f = $('#txn-form');
+      f.elements.payment_status.value = t.payment_status;
+      f.elements.dispensed.checked = !!t.dispensed;
+      f.elements.collected.checked = !!t.collected;
+      formError('', '#txn-form-error', '');
+      openModal('#txn-modal');
+    }).catch(err => toast(err.message, true));
+  } else if (btn.dataset.act === 'del-txn') {
+    askConfirm('Delete transaction?',
+      `${tr.dataset.txn} will be permanently deleted, including its payment events. This cannot be undone.`,
+      async () => {
+        await api('/api/db/transactions/' + id, { method: 'DELETE' });
+        toast('Transaction deleted');
+        refreshAll();
+      });
+  }
+});
+
+$('#txn-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    await api('/api/db/transactions/' + editingTxnId, {
+      method: 'PUT',
+      body: {
+        payment_status: f.elements.payment_status.value,
+        dispensed: f.elements.dispensed.checked,
+        collected: f.elements.collected.checked
+      }
+    });
+    toast('Transaction updated');
+    closeModal($('#txn-modal'));
+    refreshAll();
+  } catch (err) {
+    formError('', '#txn-form-error', err.message);
+  }
+});
+
+async function refreshAll() {
+  try {
+    await Promise.all([loadSummary(), loadTransactions(), loadProducts(), loadCustomers()]);
+  } catch (err) {
+    showError('Database unavailable: ' + err.message);
+  }
+}
+refreshAll();
+setInterval(() => { loadSummary().catch(() => {}); loadTransactions().catch(() => {}); }, 15000);
+</script>
+</body>
+</html>

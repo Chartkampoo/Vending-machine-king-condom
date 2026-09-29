@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตู้จำหน่ายถุงยางอนามัยอัตโนมัติ</title>
+  <meta name="description"
+    content="ตู้จำหน่ายถุงยางอนามัยและผลิตภัณฑ์สุขอนามัยอัตโนมัติ 24 ชั่วโมง สะดวก รวดเร็ว ปลอดภัย รองรับเงินสด สแกน QR PromptPay และแตะบัตร">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script>
+(function () {
+      var t = localStorage.getItem('kc-theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    })();
+</script>
+</head>
+
+<body>
+
+  <header class="top-nav-bar">
+    <div class="brand-badge">
+      <span id="nav-brand-title">King Condom</span>
+    </div>
+    <div class="nav-actions">
+      <button class="admin-toggle-btn" id="btn-open-admin" title="จัดการสต็อกสินค้า">
+        <span>⚙️</span>
+        <span id="text-admin-btn">จัดการสต็อก (Restock)</span>
+      </button>
+      <button class="lang-btn" id="btn-toggle-theme" title="สลับโหมดมืด/สว่าง">
+        <span id="theme-toggle-icon">🌙</span>
+        <span id="theme-toggle-label">Dark</span>
+      </button>
+      <button class="lang-btn" id="btn-toggle-lang" title="Switch Language">
+        <span>🌐</span>
+        <span id="lang-current-label">EN / ไทย</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="vending-cabinet-wrapper">
+    <div class="vending-cabinet">
+      <section class="showcase-section" id="showcase-frame">
+
+        <div class="shelves-container" id="shelves-container">
+        </div>
+
+        <div class="delivery-chute-container">
+          <div class="chute-flap" id="delivery-flap" title="กดเพื่อเปิดช่องหยิบสินค้า">
+            <span id="flap-text">PUSH รับสินค้า</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="control-tower-section">
+
+        <div class="touchscreen-kiosk" id="touchscreen-display">
+
+          <div class="kiosk-status-bar">
+            <div class="kiosk-brand">
+              <span id="kiosk-logo-text">King Condom</span>
+            </div>
+            <div class="kiosk-time-status">
+              <span class="live-clock" id="live-clock">18:00:00</span>
+            </div>
+          </div>
+
+          <div class="kiosk-prompt-banner">
+            <div class="indicator-dot"></div>
+            <span id="screen-prompt-text">กรุณาเลือกสินค้าที่ต้องการซื้อจากหน้าจอด้านล่าง</span>
+          </div>
+
+          <div class="category-tabs-bar" id="category-tabs-bar">
+            <button class="cat-tab-btn active" data-cat="all">ทั้งหมด (All)</button>
+            <button class="cat-tab-btn" data-cat="49">ไซส์ 49</button>
+            <button class="cat-tab-btn" data-cat="52">ไซส์ 52</button>
+            <button class="cat-tab-btn" data-cat="54">ไซส์ 54</button>
+            <button class="cat-tab-btn" data-cat="56">ไซส์ 56</button>
+            <button class="cat-tab-btn" data-cat="gel">เจลหล่อลื่น</button>
+          </div>
+
+          <div class="kiosk-screen-body" id="kiosk-screen-body">
+
+            <div class="kiosk-product-grid" id="kiosk-product-grid">
+            </div>
+
+            <div class="kiosk-pager" id="kiosk-pager" style="display: none;"></div>
+
+            <div id="kiosk-interactive-view" style="display: none;"></div>
+
+          </div>
+        </div>
+
+        <div class="orange-instruction-card">
+          <div class="instruction-title" id="inst-title">ขั้นตอนการซื้อสินค้า</div>
+          <ul class="instruction-steps">
+            <li id="inst-s1">1. แตะเลือกสินค้าที่ต้องการบนหน้าจอสัมผัส</li>
+            <li id="inst-s2">2. เลือกช่องทางชำระเงิน (เงินสด / QR PromptPay)</li>
+            <li id="inst-s3">3. สแกนจ่ายหรือหยอดเหรียญ/สอดธนบัตรตามยอด</li>
+            <li id="inst-s4">4. รอสปริงหมุนจ่ายของ และกดเปิดช่องรับของด้านล่าง</li>
+          </ul>
+        </div>
+
+        <div class="hardware-payment-panel">
+
+          <div class="hardware-row">
+            <div class="coin-slot-unit" title="ช่องหยอดเหรียญ">
+              <div class="coin-slit"></div>
+              <span class="hardware-label" id="hw-coin-label">ช่องหยอดเหรียญ</span>
+            </div>
+
+            <div class="banknote-unit" title="ช่องสอดธนบัตร">
+              <div class="bill-slit">
+                <div class="bill-green-light"></div>
+              </div>
+              <span class="hardware-label" id="hw-bill-label">ช่องสอดธนบัตร</span>
+            </div>
+          </div>
+
+          <div class="hardware-cash-popover">
+            <span style="font-size: 11px; font-weight: 700; color: #64748b; width: 100%; text-align: center;"
+              id="hw-insert-title">
+              หยอดเหรียญ / สอดธนบัตร:
+            </span>
+            <button class="hardware-money-btn coin" onclick="insertHardwareMoney(1)"
+              title="หยอดเหรียญ 1 บาท">1฿</button>
+            <button class="hardware-money-btn coin" onclick="insertHardwareMoney(5)"
+              title="หยอดเหรียญ 5 บาท">5฿</button>
+            <button class="hardware-money-btn coin" onclick="insertHardwareMoney(10)"
+              title="หยอดเหรียญ 10 บาท">10฿</button>
+            <button class="hardware-money-btn" onclick="insertHardwareMoney(20)" title="สอดแบงก์ 20 บาท">20฿</button>
+            <button class="hardware-money-btn" onclick="insertHardwareMoney(50)" title="สอดแบงก์ 50 บาท">50฿</button>
+            <button class="hardware-money-btn" onclick="insertHardwareMoney(100)" title="สอดแบงก์ 100 บาท">100฿</button>
+            <button class="hardware-money-btn" onclick="insertHardwareMoney(500)" title="สอดแบงก์ 500 บาท">500฿</button>
+          </div>
+
+          <div class="physical-actions-subrow">
+            <button class="refund-lever-btn" id="btn-hardware-refund" title="คันโยกขอคืนเงิน / ยกเลิก">
+              <span>↩</span>
+              <span id="hw-refund-label">ยกเลิก / คืนเงิน (Refund)</span>
+            </button>
+            <div class="coin-return-cup" id="coin-return-cup" title="ช่องรับเงินทอน / คืนเงิน">
+              <span id="coin-return-count">0฿</span>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <div class="vending-footer-branding">
+        <span><span class="line-pill">LINE</span> @kingcondom</span>
+        <span>📞 089-999-9999</span>
+        <span style="color: #94a3b8;" id="safe-footer-tag">• รักปลอดภัย มั่นใจตลอด</span>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="pickup-modal">
+    <div class="modal-content-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="pickup-modal-title">🎉 รับสินค้าสำเร็จ</h3>
+        <button class="modal-close-btn" id="btn-close-pickup">&times;</button>
+      </div>
+      <div class="pickup-modal-body">
+        <div class="pickup-box-animation" id="pickup-box-display">
+        </div>
+        <h4 id="pickup-product-name" style="font-size: 16px; color: var(--text);">-</h4>
+        <p id="pickup-product-desc" style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">-</p>
+
+        <div
+          style="width: 100%; background: var(--bg); border: 1px dashed var(--border-strong); border-radius: 12px; padding: 12px; font-size: 12px; text-align: left;">
+          <div
+            style="font-weight: 700; color: var(--text); margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">
+            🧾 ใบเสร็จรับเงินดิจิทัล (E-Receipt)
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>รหัสสินค้า / ช่อง:</span>
+            <strong id="receipt-slot">-</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>รหัสธุรกรรม:</span>
+            <strong id="receipt-txn">-</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>วิธีชำระเงิน:</span>
+            <strong id="receipt-method">-</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>ยอดชำระ:</span>
+            <strong id="receipt-price" style="color: var(--text);">-</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;" id="receipt-change-row">
+            <span>เงินทอน:</span>
+            <strong id="receipt-change" style="color: var(--success);">0 บาท</strong>
+          </div>
+        </div>
+
+        <button class="kiosk-btn btn-primary" id="btn-pickup-confirm"
+          style="width: 100%; padding: 12px; font-size: 14px;">
+          รับของเรียบร้อย (Done)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="admin-modal">
+    <div class="modal-content-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="admin-modal-title">⚙️ ระบบจัดการสต็อกสินค้า (Restock / Inventory)</h3>
+        <button class="modal-close-btn" id="btn-close-admin">&times;</button>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 13px; color: var(--text-muted);">ตรวจสอบและเติมสินค้าในแต่ละช่อง</span>
+        <button class="kiosk-btn btn-success" id="btn-restock-all" style="padding: 6px 12px; font-size: 12px;">
+          ➕ เติมสต็อกเต็มทุกช่อง (Restock All)
+        </button>
+      </div>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>ช่อง</th>
+            <th>ชื่อสินค้า</th>
+            <th>ราคา</th>
+            <th>คงเหลือ / สูงสุด</th>
+            <th>การจัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="admin-table-body">
+        </tbody>
+      </table>
+      <button class="kiosk-btn btn-secondary" id="btn-admin-close" style="width: 100%;">
+        ปิดหน้าต่าง (Close)
+      </button>
+      <a href="http://localhost:8080/dbviewer.html" target="_blank" rel="noopener"
+        style="display:block; text-align:center; margin-top:8px; font-size:12px; color: var(--text-muted);">
+        🗄️ เปิดดูฐานข้อมูล (Open Database Viewer)
+      </a>
+    </div>
+  </div>
+
+  <script src="products.js">
+
+</script>
+  <script src="app.js">
+
+</script>
+</body>
+
+</html>

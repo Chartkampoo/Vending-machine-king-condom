@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Local configs and database credentials
+my.ini
+.env
+.env.local
+
+# Operating system / Editor temporary files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.freebuff/
+
+# Microsoft Office temporary lock files
+~$*.docx
+~$*.doc
+~$*.xlsx
+
+# Python cache (if any)
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+npm-debug.log*
